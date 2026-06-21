@@ -183,6 +183,10 @@
     <div id="breastFeedForm" class="input-section">
         <h3>Breast Feeding</h3>
         <div class="form-group">
+            <label>Time:</label>
+            <input type="time" id="breastFeedTime" step="300">
+        </div>
+        <div class="form-group">
             <label>Left Breast (min):</label>
             <select id="leftBreast"></select>
         </div>
@@ -190,16 +194,20 @@
             <label>Right Breast (min):</label>
             <select id="rightBreast"></select>
         </div>
-        <button class="submit-btn" onclick="saveEvent('Breast Feeding', ['leftBreast', 'rightBreast'])">Save</button>
+        <button class="submit-btn" onclick="saveEvent('Breast Feeding', ['breastFeedTime', 'leftBreast', 'rightBreast'])">Save</button>
     </div>
 
     <div id="bottleForm" class="input-section">
         <h3 id="bottleTitle">Bottle Feed</h3>
         <div class="form-group">
+            <label>Time:</label>
+            <input type="time" id="bottleTime" step="300">
+        </div>
+        <div class="form-group">
             <label>Amount (ml):</label>
             <select id="milkAmount"></select>
         </div>
-        <button class="submit-btn" onclick="saveEvent('Bottle', ['milkAmount'])">Save</button>
+        <button class="submit-btn" onclick="saveEvent('Bottle', ['bottleTime', 'milkAmount'])">Save</button>
     </div>
 
     <div id="diaperForm" class="input-section">
@@ -300,7 +308,11 @@
             const rounded = getRoundedTime();
             if(formId === 'sleepForm') document.getElementById('sleepStartTime').value = rounded;
             if(formId === 'awakenForm') document.getElementById('awakenTime').value = rounded;
-            if(formId === 'bottleForm') document.getElementById('bottleTitle').innerText = type;
+            if(formId === 'bottleForm') {
+                document.getElementById('bottleTitle').innerText = type;
+                document.getElementById('bottleTime').value = rounded;
+            }
+            if(formId === 'breastFeedForm') document.getElementById('breastFeedTime').value = rounded;
             if(formId === 'diaperForm') document.getElementById('diaperTime').value = rounded;
         }
 
@@ -361,7 +373,10 @@
             let details = {};
             inputIds.forEach(id => {
                 const el = document.getElementById(id);
+                // Regex splits camelCase (e.g., milkAmount -> milk Amount)
                 let label = id.replace(/([A-Z])/g, ' $1').trim(); 
+                // Ensure the first letter is always capitalized
+                label = label.charAt(0).toUpperCase() + label.slice(1);
                 details[label] = el.value;
             });
 
@@ -417,22 +432,27 @@
 
             if (log.type === 'Sleep') {
                 document.getElementById('editSleepForm').classList.add('active');
-                document.getElementById('editSleepStart').value = log.details['Start Time'];
-                document.getElementById('editSleepEnd').value = log.details['End Time'];
+                document.getElementById('editSleepStart').value = log.details['Start Time'] || log.details['start Time'];
+                document.getElementById('editSleepEnd').value = log.details['End Time'] || log.details['end Time'];
             } else if (log.type === 'Bottle') {
                 document.getElementById('bottleForm').classList.add('active');
-                document.getElementById('milkAmount').value = log.details['Milk Amount'];
+                document.getElementById('bottleTime').value = log.details['Bottle Time'] || log.details['bottle Time'] || "";
+                document.getElementById('milkAmount').value = log.details['Milk Amount'] || log.details['milk Amount'];
                 currentEventType = log.details['Type'];
                 document.getElementById('bottleTitle').innerText = currentEventType + " (Edit)";
             } else if (log.type === 'Diaper Change') {
                 document.getElementById('diaperForm').classList.add('active');
-                document.getElementById('diaperType').value = log.details['Diaper Type'];
-                document.getElementById('diaperTime').value = log.details['Diaper Time'];
+                document.getElementById('diaperType').value = log.details['Diaper Type'] || log.details['diaper Type'];
+                document.getElementById('diaperTime').value = log.details['Diaper Time'] || log.details['diaper Time'];
             } else if (log.type === 'Breast Feeding') {
                 document.getElementById('breastFeedForm').classList.add('active');
-                document.getElementById('leftBreast').value = log.details['Left Breast'];
-                document.getElementById('rightBreast').value = log.details['Right Breast'];
+                document.getElementById('breastFeedTime').value = log.details['Breast Feed Time'] || log.details['breast Feed Time'] || "";
+                document.getElementById('leftBreast').value = log.details['Left Breast'] || log.details['left Breast'];
+                document.getElementById('rightBreast').value = log.details['Right Breast'] || log.details['right Breast'];
             }
+
+            // Scroll to the top so you can easily see the edit form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function saveEditedSleep() {
@@ -461,8 +481,8 @@
             container.innerHTML = logs.map(log => {
                 // Calculate summaries for today
                 if (isToday(log.timestamp)) {
-                    if (log.type === 'Sleep') totalSleepMins += parseInt(log.details['Duration']);
-                    if (log.type === 'Bottle') totalMilk += parseInt(log.details['Milk Amount']);
+                    if (log.type === 'Sleep') totalSleepMins += parseInt(log.details['Duration'] || 0);
+                    if (log.type === 'Bottle') totalMilk += parseInt(log.details['Milk Amount'] || log.details['milk Amount'] || 0);
                 }
 
                 let detailStr = Object.entries(log.details)
